@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Comité de Crisis | NovaGen — Simulador Estratégico VUCA</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-app: #0f1117;
+            --bg-card: #141720;
+            --bg-bubble-sys: #1c2133;
+            --bg-bubble-user: linear-gradient(145deg, #1b6e53, #0e5240);
+            --bg-input: #0a0d14;
+            --border-soft: #252d42;
+            --border-mid: #303b56;
+            --text-primary: #e8f0ff;
+            --text-secondary: #9aacd4;
+            --text-muted: #6675a0;
+            --accent-green: #2baa78;
+            --accent-green-dim: #1a5e44;
+            --accent-yellow: #f4c542;
+            --accent-red: #ff7b72;
+            --accent-blue: #6ba8f5;
+
+        }
+
+        body {
+            background: var(--bg-app);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 860px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        /* ── HEADER BAR ── */
+        .app-header {
+            background: #0a0d14;
+            border: 1px solid var(--border-soft);
+            border-bottom: none;
+            border-radius: 20px 20px 0 0;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .dot-red { background: var(--accent-red); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        .header-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .header-badge {
+            margin-left: auto;
+            font-size: 0.65rem;
+            background: rgba(255,123,114,0.12);
+            color: var(--accent-red);
+            border: 1px solid rgba(255,123,114,0.25);
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── CHAT PANE ── */
+        .chat-pane {
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-top: none;
+            border-bottom: none;
+        }
+
+        .chat-subheader {
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .meta-pill {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            background: #13182480;
+            border: 1px solid var(--border-soft);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .date-tag {
+            margin-left: auto;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .chat-body {
+            padding: 20px 16px;
+            max-height: 62vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-mid) transparent;
+        }
+
+        .chat-body::-webkit-scrollbar { width: 4px; }
+        .chat-body::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+
+        /* ── MESSAGES ── */
+        .msg-row {
+            display: flex;
+            gap: 10px;
+            animation: msgIn 0.25s ease;
+        }
+
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-row.outgoing {
+            flex-direction: row-reverse;
+            align-self: flex-end;
+            max-width: 82%;
+        }
+
+        .msg-row.incoming {
+            align-self: flex-start;
+            max-width: 88%;
+        }
+
+        .avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 700;
+            flex-shrink: 0;
+            letter-spacing: 0.03em;
+        }
+
+        .av-de  { background: #1a2140; color: #6ba8f5; }
+        .av-com { background: #1a2930; color: var(--accent-green); }
+        .av-leg { background: #261a2e; color: #ce93d8; }
+        .av-fin { background: #261e14; color: #ffb74d; }
+        .av-rh  { background: #141a2c; color: #80cbc4; }
+        .av-ti  { background: #1f1a26; color: #f48fb1; }
+        .av-usr { background: var(--accent-green-dim); color: #a8ffda; }
+
+        .msg-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+        .msg-meta {
+            display: flex; align-items: baseline; gap: 8px;
+            padding: 0 4px;
+        }
+
+        .msg-sender { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); }
+        .msg-time   { font-size: 0.62rem; color: var(--text-muted); font-family: monospace; }
+
+        .bubble {
+            padding: 9px 14px;
+            border-radius: 18px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+
+        .incoming .bubble {
+            background: var(--bg-bubble-sys);
+            border-top-left-radius: 4px;
+        }
+
+        .outgoing .bubble {
+            background: var(--accent-green-dim);
+            border-top-right-radius: 4px;
+            color: #c8ffeb;
+        }
+
+        .bubble.critical {
+            background: #1f1218;
+            border-left: 3px solid var(--accent-red);
+        }
+
+        .bubble.urgent {
+            background: #1e1a10;
+            border-left: 3px solid var(--accent-yellow);
+        }
+
+        .bubble ul {
+            margin: 6px 0 2px 18px;
+            list-style-type: disc;
+        }
+
+        .bubble ul li { margin: 4px 0; color: #c5d4f5; }
+
+        .bubble .data-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 4px;
+        }
+
+        .data-chip {
+            font-size: 0.72rem;
+            background: #0a0f1c;
+            border: 1px solid var(--border-mid);
+            border-radius: 8px;
+            padding: 4px 10px;
+            color: var(--text-secondary);
+        }
+
+        .data-chip span { color: var(--text-primary); font-weight: 600; }
+
+        .divider-time {
+            text-align: center;
+            font-size: 0.62rem;
+            color: var(--text-muted);
+            position: relative;
+            padding: 4px 0;
+        }
+
+        .divider-time::before, .divider-time::after {
+            content: '';
+            position: absolute;
+            top: 50%; width: 38%;
+            height: 1px; background: var(--border-soft);
+        }
+
+        .divider-time::before { left: 0; }
+        .divider-time::after  { right: 0; }
+
+        .system-notice {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: #10141e;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            padding: 5px 14px;
+            margin: 0 auto;
+        }
+
+        /* ── FOOTER CTA ── */
+        .chat-footer {
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-top: 1px solid var(--border-mid);
+            border-bottom: none;
+            padding: 14px 20px;
+        }
+
+        .cta-btn {
+            width: 100%;
+            background: var(--accent-green-dim);
+            border: 1px solid var(--accent-green);
+            border-radius: 12px;
+            color: #b8ffdd;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.02em;
+        }
+
+        .cta-btn:hover { background: #1e7a56; transform: translateY(-1px); }
+        .cta-hint {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* ── DECISION PANEL ── */
+        .decision-pane {
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            padding: 24px 20px;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-left: 3px solid var(--accent-green);
+            padding-left: 12px;
+            margin-bottom: 6px;
+        }
+
+        .panel-sub {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin-bottom: 18px;
+            padding-left: 15px;
+        }
+
+        .stances { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+        .stance-card {
+            background: #10141d;
+            border: 1px solid var(--border-soft);
+            border-radius: 14px;
+            padding: 13px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stance-card:hover { border-color: var(--border-mid); background: #141924; }
+
+        .stance-card.selected {
+            border-color: var(--accent-green);
+            background: #0e1f18;
+            box-shadow: inset 0 0 0 1px var(--accent-green);
+        }
+
+        .stance-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+        }
+
+        .stance-radio {
+            width: 16px; height: 16px;
+            accent-color: var(--accent-green);
+            cursor: pointer;
+        }
+
+        .stance-label {
+            font-size: 0.85rem; font-weight: 700; color: var(--text-primary);
+        }
+
+        .stance-badge {
+            margin-left: auto;
+            font-size: 0.62rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .badge-a { background: rgba(107,168,245,0.12); color: var(--accent-blue); border: 1px solid rgba(107,168,245,0.25); }
+        .badge-b { background: rgba(43,170,120,0.12); color: var(--accent-green); border: 1px solid rgba(43,170,120,0.25); }
+        .badge-c { background: rgba(206,147,216,0.12); color: #ce93d8; border: 1px solid rgba(206,147,216,0.25); }
+
+        .stance-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            padding-left: 26px;
+        }
+
+        .stance-risks {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding-left: 26px;
+            margin-top: 5px;
+        }
+
+        .stance-risks strong { color: var(--accent-yellow); }
+
+        .field-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            resize: vertical;
+            margin-bottom: 14px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus { outline: none; border-color: var(--accent-green); }
+
+        .send-btn {
+            width: 100%;
+            background: var(--accent-green-dim);
+            border: 1px solid var(--accent-green);
+            border-radius: 12px;
+            color: #b8ffdd;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .send-btn:hover { background: #1e7a56; }
+
+        .back-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--border-mid);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 0.83rem;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover { background: #141924; }
+
+        .stance-summary {
+            background: #090d14;
+            border-left: 3px solid var(--accent-yellow);
+            border-radius: 0 10px 10px 0;
+            padding: 12px 14px;
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .stance-summary .ss-title {
+            font-weight: 700;
+            color: var(--accent-yellow);
+            font-size: 0.72rem;
+            margin-bottom: 6px;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── FEEDBACK PANEL ── */
+        .feedback-pane {
+            background: #090c13;
+            border: 1px solid var(--border-soft);
+            border-radius: 0 0 20px 20px;
+            padding: 20px;
+        }
+
+        .fb-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .fb-block {
+            background: #0f1520;
+            border: 1px solid var(--border-soft);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .fb-block-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .fb-text {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .fb-text strong { color: var(--text-primary); }
+
+
+
+        .fb-reflection {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .reflection-q {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: #0d1119;
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            padding: 9px 12px;
+            line-height: 1.5;
+        }
+
+        .reflection-q::before { content: '→ '; color: var(--accent-green); font-weight: 700; }
+
+        /* ── SCREEN MGMT ── */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: #111e18;
+            color: #a8ffda;
+            border: 1px solid var(--accent-green);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 0.82rem;
+            z-index: 999;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            body { padding: 12px 8px; }
+            .chat-body { max-height: 55vh; }
+            .bubble { font-size: 0.83rem; }
+            .vuca-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <!-- ════════════════════════════════
+         PANTALLA 1: CHAT
+    ════════════════════════════════ -->
+    <div id="screen-chat" class="screen active">
+
+        <div class="app-header">
+            <div class="header-dot dot-red"></div>
+            <span class="header-title">Comité de Crisis · Canal Restringido · NovaGen S.A.</span>
+            <span class="header-badge">CRISIS ACTIVA</span>
+        </div>
+
+        <div class="chat-pane">
+            <div class="chat-subheader">
+                <span class="meta-pill">🔐 Canal cifrado</span>
+                <span class="meta-pill">⛔ Solo Consejo Estratégico</span>
+                <span class="meta-pill">👁 Auditado</span>
+                <span class="date-tag" id="dynDate"></span>
+            </div>
+
+            <div class="chat-body" id="chatBody">
+
+                <div class="system-notice">Canal activado — 09:14 h — Alerta de incidente crítico</div>
+
+                <!-- Mensaje 1: Dirección Ejecutiva — apertura -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-de">DE</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Dirección Ejecutiva</span>
+                            <span class="msg-time">09:14</span>
+                        </div>
+                        <div class="bubble critical">
+                            <strong>ALERTA NIVEL 1 — FILTRACIÓN DE DATOS CONFIRMADA</strong><br><br>
+                            A las 08:27 h, el equipo de Seguridad detectó acceso no autorizado a nuestros servidores de producción. Los primeros análisis forenses indican que la brecha pudo haberse iniciado hace 72 horas. Estamos convocando sesión de emergencia del Consejo Estratégico.<br><br>
+                            <div class="data-row">
+                                <div class="data-chip">Clientes potencialmente afectados: <span>~14.800</span></div>
+                                <div class="data-chip">Datos expuestos: <span>nombre, correo, teléfono, historial de compras</span></div>
+                                <div class="data-chip">Acceso a tarjetas: <span>aún sin confirmar</span></div>
+                                <div class="data-chip">Tiempo transcurrido: <span>47 min desde detección</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje 2: Comunicaciones -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-com">JC</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Jefe de Comunicaciones</span>
+                            <span class="msg-time">09:18</span>
+                        </div>
+                        <div class="bubble">
+                            Acabo de recibir tres solicitudes de entrevista de medios especializados (TechInsider, DataPulse, El Comercio Digital). No tenemos cifras verificadas todavía, pero el silencio total también comunica: puede interpretarse como ocultamiento.<br><br>
+                            Tenemos dos opciones reales en este momento:
+                            <ul>
+                                <li>Emitir un primer comunicado de "reconocimiento del incidente" sin detalles, para demostrar transparencia activa.</li>
+                                <li>Esperar cifras forenses validadas, asumiendo el riesgo de que un medio publique primero.</li>
+                            </ul>
+                            Necesito una decisión antes de las 10:00 h o pierdo el control de la narrativa.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje 3: Legal -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-leg">LA</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Legal y Asuntos Corporativos</span>
+                            <span class="msg-time">09:21</span>
+                        </div>
+                        <div class="bubble urgent">
+                            Quiero que quede registrado: bajo la Ley 29733 (Protección de Datos Personales, Perú) y el reglamento asociado, tenemos <strong>un plazo máximo de 72 horas desde la detección</strong> para notificar formalmente a la autoridad competente (ANPDP). Ya corren 47 minutos de ese plazo.<br><br>
+                            Cualquier declaración pública debe pasar por esta área antes de ser emitida. Un error de redacción podría configurar un reconocimiento de negligencia.<br><br>
+                            Mi recomendación: no emitir nada hasta tener el dictamen forense preliminar. El riesgo legal supera el riesgo comunicacional en este momento.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje 4: Finanzas -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-fin">GF</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Gerencia de Finanzas</span>
+                            <span class="msg-time">09:25</span>
+                        </div>
+                        <div class="bubble">
+                            Tres inversores institucionales ya me han llamado. Uno de ellos —el fondo que representa el 18% de nuestra capitalización— está considerando convocar una junta extraordinaria si no reciben una comunicación formal en las próximas 4 horas.<br><br>
+                            <div class="data-row">
+                                <div class="data-chip">Exposición reputacional estimada (caso medio): <span>-12% cotización</span></div>
+                                <div class="data-chip">Multa máxima ANPDP (si hay negligencia): <span>hasta 50 UIT</span></div>
+                                <div class="data-chip">Coste estimado notificación a clientes: <span>S/ 180.000</span></div>
+                            </div>
+                            <br>
+                            Necesitamos una postura unificada. La incoherencia interna entre áreas es nuestra mayor amenaza ahora mismo.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje 5: RR.HH. -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-rh">RH</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Recursos Humanos</span>
+                            <span class="msg-time">09:29</span>
+                        </div>
+                        <div class="bubble">
+                            Los equipos de soporte al cliente y ventas ya están recibiendo preguntas de sus propios compañeros. Hay rumores internos sobre posibles responsabilidades personales. Si no comunicamos algo hacia adentro antes de que circule más desinformación, podemos perder credibilidad con nuestra propia gente.<br><br>
+                            Recomiendo activar el protocolo de comunicación interna de emergencia: un mensaje del CEO a todos los colaboradores, claro y sin tecnicismos, confirmando que estamos gestionando el incidente y que se informará de forma ordenada.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider-time">hace 8 minutos</div>
+
+                <!-- Mensaje 6: Dirección — escalada -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-de">DE</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Dirección Ejecutiva</span>
+                            <span class="msg-time">hace 8 min</span>
+                        </div>
+                        <div class="bubble critical">
+                            🔴 <strong>ESCALADA</strong> — TechInsider acaba de publicar una nota con el título: <em>"Fuentes internas confirman filtración masiva en NovaGen"</em>. El hashtag #NovaGenLeak tiene 1.200 menciones en los últimos 20 minutos en redes sociales.<br><br>
+                            La ventana para controlar la narrativa se está cerrando. Necesito la postura del Consejo ahora.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje 7: TI -->
+                <div class="msg-row incoming">
+                    <div class="avatar av-ti">TI</div>
+                    <div class="msg-body">
+                        <div class="msg-meta">
+                            <span class="msg-sender">Gerencia de TI y Seguridad</span>
+                            <span class="msg-time">hace 3 min</span>
+                        </div>
+                        <div class="bubble urgent">
+                            Actualización técnica: hemos aislado el vector de entrada. Fue una vulnerabilidad de día cero en el módulo de autenticación del portal de proveedores. La brecha está contenida. <strong>No se detectó extracción de datos financieros ni credenciales de acceso bancario.</strong><br><br>
+                            El dictamen forense preliminar estará listo en aproximadamente 90 minutos. Puedo confirmar que los sistemas están bajo control, pero no puedo confirmar aún el alcance exacto de los datos comprometidos.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-notice" id="userMsgPlaceholder" style="display:none;">Tu intervención ha sido registrada en este canal ↑</div>
+
+            </div><!-- /chat-body -->
+        </div><!-- /chat-pane -->
+
+        <div class="chat-footer">
+            <button class="cta-btn" id="goDecisionBtn">📋 Ir al panel de decisión →</button>
+            <p class="cta-hint">Lee el canal completo antes de definir tu postura estratégica.</p>
+        </div>
+
+    </div><!-- /screen-chat -->
+
+
+    <!-- ════════════════════════════════
+         PANTALLA 2: DECISIÓN
+    ════════════════════════════════ -->
+    <div id="screen-decision" class="screen">
+
+        <div class="app-header">
+            <div class="header-dot dot-red"></div>
+            <span class="header-title">Panel de decisión · Consejero estratégico</span>
+            <span class="header-badge">CRISIS ACTIVA</span>
+        </div>
+
+        <div class="decision-pane">
+
+            <div class="panel-title">Tu postura inicial ante el Comité</div>
+            <div class="panel-sub">
+                Selecciona una posición estratégica y redacta tu intervención (posición, riesgos que priorizas e información adicional que necesitas antes de actuar).
+            </div>
+
+            <div class="stances" id="stancesContainer">
+
+                <div class="stance-card" data-stance="A" id="card-A">
+                    <div class="stance-header">
+                        <input type="radio" name="stance" value="A" class="stance-radio" id="radio-A">
+                        <label class="stance-label" for="radio-A">Posición A — Contención y estabilidad interna</label>
+                        <span class="stance-badge badge-a">DEFENSIVA</span>
+                    </div>
+                    <div class="stance-desc">
+                        Priorizar la contención del daño reputacional y la estabilidad operativa. Comunicación externa mínima y controlada hasta tener cifras validadas. Comunicación interna inmediata para evitar rumores. Coordinación estrecha con Legal antes de cualquier declaración pública.
+                    </div>
+                    <div class="stance-risks"><strong>Riesgo principal:</strong> perder el control de la narrativa si un medio publica primero. El silencio puede interpretarse como ocultamiento.</div>
+                </div>
+
+                <div class="stance-card" data-stance="B" id="card-B">
+                    <div class="stance-header">
+                        <input type="radio" name="stance" value="B" class="stance-radio" id="radio-B">
+                        <label class="stance-label" for="radio-B">Posición B — Transparencia radical inmediata</label>
+                        <span class="stance-badge badge-b">OFENSIVA</span>
+                    </div>
+                    <div class="stance-desc">
+                        Asumir responsabilidad pública de forma proactiva antes de que los medios controlen el relato. Emitir declaración oficial del CEO con disculpa, datos disponibles y hoja de ruta de acciones. Apostar a recuperar confianza mediante apertura total.
+                    </div>
+                    <div class="stance-risks"><strong>Riesgo principal:</strong> declarar sin cifras validadas puede magnificar el incidente o crear inconsistencias que dañen más la credibilidad.</div>
+                </div>
+
+                <div class="stance-card" data-stance="C" id="card-C">
+                    <div class="stance-header">
+                        <input type="radio" name="stance" value="C" class="stance-radio" id="radio-C">
+                        <label class="stance-label" for="radio-C">Posición C — Tiempo estratégico y auditoría forense</label>
+                        <span class="stance-badge badge-c">ANALÍTICA</span>
+                    </div>
+                    <div class="stance-desc">
+                        Escalar a comité externo de gestión de crisis e iniciar auditoría forense antes de emitir ninguna declaración pública. Gestionar inversores directamente en paralelo. No comunicar externamente sin datos validados. Ganar 90 minutos hasta el dictamen de TI.
+                    </div>
+                    <div class="stance-risks"><strong>Riesgo principal:</strong> el hashtag #NovaGenLeak ya está activo. Cada minuto de silencio externo puede alimentar la especulación.</div>
+                </div>
+
+            </div>
+
+            <label class="field-label" for="interventionText">Redacta tu intervención ante el Comité</label>
+            <textarea id="interventionText" rows="5"
+                placeholder="Ejemplo:
+Posición: Contener el daño reputacional, proteger la estabilidad operativa.
+Riesgos que priorizo: filtración de datos financieros (aún no descartada), pérdida de confianza inversora.
+Información que necesito antes de actuar: dictamen forense preliminar de TI, confirmación de acceso o no a datos de tarjetas."></textarea>
+
+            <button class="send-btn" id="sendPostureBtn">📢 Enviar postura al Comité</button>
+            <button class="back-btn" id="backToChatBtn">← Volver al canal de crisis</button>
+
+            <div class="stance-summary" id="stanceSummary">
+                <div class="ss-title">POSTURA REGISTRADA</div>
+                <span style="color: var(--text-muted);">Aún no has enviado ninguna intervención.</span>
+            </div>
+
+        </div>
+
+    </div><!-- /screen-decision -->
+
+
+    <!-- ════════════════════════════════
+         PANTALLA 3: FEEDBACK + VUCA
+    ════════════════════════════════ -->
+    <div id="screen-feedback" class="screen">
+
+        <div class="app-header">
+            <div class="header-dot" style="background: var(--accent-green);"></div>
+            <span class="header-title">Análisis de tu postura · Orientación pedagógica</span>
+        </div>
+
+        <div class="decision-pane" style="border-radius: 0;">
+            <div class="panel-title" id="fbPostureTitle">Posición seleccionada</div>
+            <div class="panel-sub" id="fbPostureDesc">—</div>
+        </div>
+
+        <div class="feedback-pane">
+
+            <div class="fb-title">Orientación por postura</div>
+
+            <div id="fbContent"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 16px;">
+                <button class="back-btn" id="backToDecisionBtn" style="flex: 1;">← Modificar postura</button>
+                <button class="cta-btn" id="backToChatFinalBtn" style="flex: 1;">Ver canal de crisis →</button>
+            </div>
+
+        </div>
+
+    </div><!-- /screen-feedback -->
+
+</div><!-- /app -->
+
+<script>
+    const stanceMeta = {
+        A: {
+            label: "Posición A — Contención y estabilidad interna",
+            desc: "Priorizas el control del daño reputacional y la coordinación legal antes de cualquier comunicación externa.",
+            color: "var(--accent-blue)",
+            feedback: {
+                fortalezas: `<strong>Coherencia con el contexto legal:</strong> La posición A respeta el marco de la Ley 29733 y la recomendación de Legal de no emitir sin dictamen forense. En situaciones de incertidumbre alta (<em>U en VUCA</em>), actuar con cautela puede prevenir declaraciones que luego resulten inconsistentes.
+                <br><br>
+                <strong>Gestión interna:</strong> Al priorizar la comunicación hacia adentro (propuesta de RR.HH.), reduces el riesgo de rumores que erosionen la cohesión del equipo en plena crisis.`,
+                tensiones: `La posición A asume que el silencio externo puede sostenerse durante el tiempo necesario para validar datos. Sin embargo, el hashtag #NovaGenLeak y la nota de TechInsider indican que la narrativa ya está siendo construida por terceros. En contextos de <em>alta volatilidad</em>, cada minuto de silencio público puede ser leído como un vacío que otros llenarán.
+                <br><br>
+                Pregunta orientadora: <em>¿Contención y transparencia son siempre opuestos, o existe un comunicado inicial que sea a la vez prudente y proactivo?</em>`,
+                pistas: ["¿Qué información mínima podrías comunicar externamente sin comprometer la posición legal?", "¿Cuánto tiempo real tienes antes de que el silencio se vuelva insostenible?", "¿Quién tiene más urgencia: los medios, los inversores o los clientes afectados?"]
+            }
+        },
+        B: {
+            label: "Posición B — Transparencia radical inmediata",
+            desc: "Priorizas asumir responsabilidad pública de forma proactiva para recuperar la iniciativa comunicacional.",
+            color: "var(--accent-green)",
+            feedback: {
+                fortalezas: `<strong>Control de la narrativa:</strong> Comunicar antes de que los medios lo hagan permite establecer el encuadre del incidente: eres tú quien define qué pasó, cómo y qué se está haciendo. Esto es especialmente valioso cuando el entorno es volátil y la desinformación ya está circulando.
+                <br><br>
+                <strong>Señal de integridad:</strong> En sectores con alta dependencia en la confianza del cliente (datos personales, finanzas), la postura de asumir responsabilidad rápido —aunque cueste en el corto plazo— puede preservar la relación a largo plazo.`,
+                tensiones: `La posición B enfrenta un riesgo técnico-legal importante: emitir datos sin validación forense puede generar inconsistencias que sean explotadas por medios, reguladores o clientes afectados. Legal señaló que incluso la redacción puede configurar reconocimiento de negligencia.
+                <br><br>
+                Además, los datos de TI indican que el alcance exacto aún no está confirmado. Declarar "14.800 clientes afectados" cuando el número real puede ser diferente puede dañar la credibilidad más que el silencio inicial.
+                <br><br>
+                Pregunta orientadora: <em>¿Qué nivel de detalle necesita un comunicado inicial para ser transparente sin ser impreciso?</em>`,
+                pistas: ["¿Existe un comunicado de 'reconocimiento del incidente' que sea honesto sin revelar datos no confirmados?", "¿Cómo coordinarías la declaración pública con Legal sin perder la ventana comunicacional?", "¿A qué audiencia priorizarías en el primer mensaje: clientes, inversores o medios?"]
+            }
+        },
+        C: {
+            label: "Posición C — Tiempo estratégico y auditoría forense",
+            desc: "Priorizas obtener información validada antes de actuar externamente, escalando a expertos y gestionando inversores directamente.",
+            color: "#ce93d8",
+            feedback: {
+                fortalezas: `<strong>Decisión basada en datos:</strong> La posición C reconoce que en contextos de alta incertidumbre (<em>U en VUCA</em>), actuar sin información suficiente puede crear daños mayores que esperar. El dictamen de TI a 90 minutos es un dato relevante: ¿vale la pena esperar para saber si hubo acceso a datos financieros?
+                <br><br>
+                <strong>Gestión directa de inversores:</strong> Al separar la comunicación con inversores de la declaración pública, evitas que la presión financiera fuerce una declaración prematura. Esto protege la calidad de la decisión.`,
+                tensiones: `La posición C asume que el entorno externo puede sostenerse en pausa durante 90 minutos. Pero la volatilidad del caso —1.200 menciones en redes en 20 minutos, nota de TechInsider publicada— sugiere que el entorno no necesariamente esperará.
+                <br><br>
+                Además, "no emitir nada" no es neutral: en el ecosistema actual de comunicación, el silencio es también un mensaje. Los grupos de interés interpretarán la ausencia de respuesta.
+                <br><br>
+                Pregunta orientadora: <em>¿Existe una forma de ganar tiempo estratégico sin que ese tiempo sea leído como evasión?</em>`,
+                pistas: ["¿Qué comunicas internamente mientras esperas el dictamen forense?", "¿Cómo gestionas la presión de los medios sin hacer una declaración sustantiva?", "¿Qué harías si en 30 minutos otro medio confirma datos que aún no tienes validados?"]
+            }
+        }
+    };
+
+    let selectedStance = null;
+    let interventionText = "";
+    let userMsgAdded = false;
+
+    const screenChat = document.getElementById("screen-chat");
+    const screenDecision = document.getElementById("screen-decision");
+    const screenFeedback = document.getElementById("screen-feedback");
+
+    function showScreen(id) {
+        [screenChat, screenDecision, screenFeedback].forEach(s => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setDate() {
+        const now = new Date();
+        const dias = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
+        const meses = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+        document.getElementById("dynDate").textContent =
+            `${dias[now.getDay()]} ${now.getDate()} ${meses[now.getMonth()]} ${now.getFullYear()} · ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} h`;
+    }
+
+    function handleStanceClick(stanceId) {
+        selectedStance = stanceId;
+        document.querySelectorAll(".stance-card").forEach(c => c.classList.remove("selected"));
+        document.querySelectorAll(".stance-radio").forEach(r => r.checked = false);
+        document.getElementById("card-" + stanceId).classList.add("selected");
+        document.getElementById("radio-" + stanceId).checked = true;
+    }
+
+    function addUserMsgToChat(senderLabel, content) {
+        const chatBody = document.getElementById("chatBody");
+        const placeholder = document.getElementById("userMsgPlaceholder");
+
+        const row = document.createElement("div");
+        row.className = "msg-row outgoing";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar av-usr";
+        avatar.textContent = "Tú";
+
+        const body = document.createElement("div");
+        body.className = "msg-body";
+
+        const meta = document.createElement("div");
+        meta.className = "msg-meta";
+        meta.innerHTML = `<span class="msg-sender" style="text-align:right;">${senderLabel}</span><span class="msg-time">ahora</span>`;
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerHTML = content.replace(/\n/g, '<br>');
+
+        body.appendChild(meta);
+        body.appendChild(bubble);
+        row.appendChild(avatar);
+        row.appendChild(body);
+
+        if (placeholder) {
+            chatBody.insertBefore(row, placeholder);
+            placeholder.style.display = "block";
+        } else {
+            chatBody.appendChild(row);
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function sendPosture() {
+        if (!selectedStance) { showToast("⚠ Selecciona una postura primero."); return; }
+        const txt = document.getElementById("interventionText").value.trim();
+        if (!txt) { showToast("⚠ Escribe tu intervención antes de enviar."); return; }
+
+        interventionText = txt;
+        const meta = stanceMeta[selectedStance];
+
+        const stanceSummary = document.getElementById("stanceSummary");
+        stanceSummary.innerHTML = `
+            <div class="ss-title" style="color: ${meta.color};">POSTURA REGISTRADA — ${meta.label}</div>
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:8px;">${meta.desc}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">"${txt.length > 180 ? txt.substring(0,180)+'…' : txt}"</div>
+            <div style="font-size:0.65rem; color:var(--text-muted); margin-top:8px;">✓ Registrada · ${new Date().toLocaleTimeString()}</div>
+        `;
+
+        if (!userMsgAdded) {
+            const chatContent = `🎯 Postura: ${meta.label}\n\n${txt}`;
+            addUserMsgToChat(`Consejero · ${meta.label.split("—")[0].trim()}`, chatContent);
+            userMsgAdded = true;
+        }
+
+        buildFeedback();
+        showScreen("screen-feedback");
+        showToast("✔ Intervención registrada en el canal de crisis");
+    }
+
+    function buildFeedback() {
+        const meta = stanceMeta[selectedStance];
+        const fb = meta.feedback;
+
+        document.getElementById("fbPostureTitle").textContent = meta.label;
+        document.getElementById("fbPostureDesc").textContent = meta.desc;
+
+        const container = document.getElementById("fbContent");
+        container.innerHTML = `
+            <div class="fb-block">
+                <div class="fb-block-title" style="color: ${meta.color};">Lo que tu postura tiene a favor</div>
+                <div class="fb-text">${fb.fortalezas}</div>
+            </div>
+            <div class="fb-block">
+                <div class="fb-block-title" style="color: var(--accent-yellow);">Tensiones y puntos ciegos a considerar</div>
+                <div class="fb-text">${fb.tensiones}</div>
+            </div>
+            <div class="fb-block">
+                <div class="fb-block-title" style="color: var(--text-secondary);">Preguntas que deberías poder responder</div>
+                <div class="fb-reflection">
+                    ${fb.pistas.map(p => `<div class="reflection-q">${p}</div>`).join("")}
+                </div>
+            </div>
+        `;
+    }
+
+    function showToast(msg) {
+        const t = document.createElement("div");
+        t.className = "toast";
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2800);
+    }
+
+    // ── EVENT LISTENERS ──
+    document.getElementById("goDecisionBtn").addEventListener("click", () => showScreen("screen-decision"));
+    document.getElementById("backToChatBtn").addEventListener("click", () => showScreen("screen-chat"));
+    document.getElementById("sendPostureBtn").addEventListener("click", sendPosture);
+    document.getElementById("backToDecisionBtn").addEventListener("click", () => showScreen("screen-decision"));
+    document.getElementById("backToChatFinalBtn").addEventListener("click", () => {
+        showScreen("screen-chat");
+        setTimeout(() => {
+            const chatBody = document.getElementById("chatBody");
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }, 100);
+    });
+
+    document.querySelectorAll(".stance-card").forEach(card => {
+        card.addEventListener("click", () => handleStanceClick(card.dataset.stance));
+    });
+
+    document.querySelectorAll(".stance-radio").forEach(radio => {
+        radio.addEventListener("change", () => handleStanceClick(radio.value));
+    });
+
+    setDate();
+</script>
+</body>
+</html>
