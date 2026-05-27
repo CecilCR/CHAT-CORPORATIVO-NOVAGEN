@@ -76,3 +76,8 @@ El diseño imita aplicaciones de mensajería moderna (estilo WhatsApp/Teams) y s
 1. Clona el repositorio:
    ```bash
    git clone https://github.com/tuusuario/crisis-comite-simulador.git
+
+   📄 Licencia
+Este proyecto se distribuye bajo la licencia MIT. Puedes usarlo libremente para fines educativos, empresariales o de formación en gestión de crisis.
+
+
